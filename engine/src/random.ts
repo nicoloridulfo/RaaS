@@ -1,14 +1,16 @@
-import { Recipe } from "./parser";
+import { Group, Recipe } from "./parser";
 
 /**
  * Returns the elements in common between the given sets.
  */
-const intersection = (sets: Set<string>[]) =>
-  [...sets[0]].filter((x) => sets.slice(1).every((s) => s.has(x)));
+const intersection = (sets: Array<string>[]) =>
+  [...sets[0]].filter((x) => sets.slice(1).every((s) => s.includes(x)));
 
+/**
+ * Uses random sampling to find groups of recipes
+ */
 export const find_groups = (recipes: Recipe[], n: number, samples: number) => {
-  const result: Recipe[][] = [];
-
+  const result: Group[] = [];
   for (let sample = 0; sample < samples; sample++) {
     let remaining: Recipe[] = [...recipes];
     const initial = remaining.splice(
@@ -21,19 +23,20 @@ export const find_groups = (recipes: Recipe[], n: number, samples: number) => {
     for (let m = 0; m < n - 1; m++) {
       const similarities = remaining.map(
         (recipe) =>
-          intersection([recipe, ...week].map((r) => r.ingredients)).length
+          intersection([recipe.ingredients, ...week.map((r) => r.ingredients)])
+            .length
       );
-
       const max = Math.max(...similarities);
 
-      const indicies = remaining.filter(
+      const indices = remaining.filter(
         (_, index) => similarities[index] === max
       );
-      const next = indicies[Math.floor(Math.random() * indicies.length)];
+      const next = indices[Math.floor(Math.random() * indices.length)];
       week.push(next);
       remaining.splice(remaining.indexOf(next), 1);
     }
-    result.push(week);
+    const inCommon = intersection(week.map((r) => r.ingredients));
+    result.push({ recipes: week, in_common: inCommon, score: inCommon.length });
   }
   return result;
 };
